@@ -14,10 +14,10 @@ export default function Home() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted">
-              MIINDS Singapore
+              MINDS Singapore
             </p>
             <p className="font-display text-lg text-[color:var(--accent-3)]">
-              MIINDS Connect
+              MINDS Connect
             </p>
           </div>
         </div>
@@ -37,7 +37,7 @@ export default function Home() {
               Event sign-ups that respect every ability and every caregiver.
             </h1>
             <p className="text-lg text-muted sm:text-xl">
-              MIINDS Connect is a dual-interface platform that lets individuals
+              MINDS Connect is a dual-interface platform that lets individuals
               self-register with a scan, while caregivers can assist, approve,
               and manage on their behalf. Staff get clean, consolidated rosters
               with capacity limits, waitlists, and attendance tracking.
@@ -422,7 +422,7 @@ export default function Home() {
           <div className="card flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                Built for MIINDS
+                Built for MINDS
               </p>
               <h3 className="font-display text-2xl text-[color:var(--accent-3)]">
                 Ready for a live demo?
@@ -433,7 +433,7 @@ export default function Home() {
             </div>
             <a
               className="rounded-full bg-[color:var(--accent)] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,143,122,0.25)] transition hover:-translate-y-0.5"
-              href="#"
+              href="/auth"
             >
               Launch prototype
             </a>

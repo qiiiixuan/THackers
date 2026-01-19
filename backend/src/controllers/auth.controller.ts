@@ -2,11 +2,14 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest, ApiResponse } from '../types/index.js';
 import * as authService from '../services/auth.service.js';
-import { Role, Gender, CaregiverType } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 // Validation schemas
+const genderEnum = z.enum(['FEMALE', 'MALE', 'OTHER', 'PREFER_NOT_TO_SAY']);
+const caregiverTypeEnum = z.enum(['MEDICAL', 'TEACHER', 'STAFF', 'FAMILY', 'OTHER']);
+
 const studentProfileSchema = z.object({
-  gender: z.nativeEnum(Gender).optional(),
+  gender: genderEnum.optional(),
   nationalId: z.string().min(4).optional(),
   nokName: z.string().min(1).optional(),
   nokContact: z.string().min(5).optional(),
@@ -16,7 +19,7 @@ const studentProfileSchema = z.object({
 
 const caregiverProfileSchema = z.object({
   contactNumber: z.string().min(5).optional(),
-  caregiverType: z.nativeEnum(CaregiverType).optional(),
+  caregiverType: caregiverTypeEnum.optional(),
   organization: z.string().min(1).optional(),
   jobTitle: z.string().min(1).optional(),
 });
