@@ -1,0 +1,88 @@
+// Prisma schema for QR Event Platform
+// Using Supabase PostgreSQL as the database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User roles enum
+enum Role {
+  STUDENT
+  CAREGIVER
+}
+
+// User model - stores both students and caregivers
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  name        String
+  role        Role     @default(STUDENT)
+  qrToken     String   @unique @default(uuid()) @map("qr_token")
+  caregiverId String?  @map("caregiver_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Self-relation: A caregiver can manage multiple students
+  caregiver   User?  @relation("CaregiverStudents", fields: [caregiverId], references: [id])
+  students    User[] @relation("CaregiverStudents")
+
+  // Events this user has signed up for
+  eventSignups EventSignup[] @relation("UserSignups")
+
+  // Events this user has created (for caregivers)
+  createdEvents Event[] @relation("EventCreator")
+
+  // Signups performed by this user (for caregiver-assisted signups)
+  assistedSignups EventSignup[] @relation("SignupAssistant")
+
+  @@map("users")
+}
+
+// Event model
+model Event {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  location    String?
+  startTime   DateTime @map("start_time")
+  endTime     DateTime @map("end_time")
+  qrToken     String   @unique @default(uuid()) @map("qr_token")
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relation to event creator
+  createdBy User @relation("EventCreator", fields: [createdById], references: [id])
+
+  // All signups for this event
+  signups EventSignup[]
+
+  @@map("events")
+}
+
+// EventSignup model - junction table for user-event signups
+model EventSignup {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  eventId      String   @map("event_id") @db.Uuid
+  signedUpById String?  @map("signed_up_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relation to the user who signed up
+  user User @relation("UserSignups", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relation to the event
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Relation to the user who performed the signup (null if self-signup)
+  signedUpBy User? @relation("SignupAssistant", fields: [signedUpById], references: [id])
+
+  // Ensure a user can only sign up once per event
+  @@unique([userId, eventId])
+  @@map("event_signups")
+}
