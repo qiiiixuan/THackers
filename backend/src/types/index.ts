@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { User } from '@prisma/client';
+import { User, Gender, CaregiverType } from '@prisma/client';
 
 // Authenticated user info from Supabase
 export interface AuthUser {
@@ -39,9 +39,30 @@ export interface CaregiverSignupRequestBody {
   studentId: string;
 }
 
+// Signup approval/check-in body
+export interface SignupActionRequestBody {
+  note?: string;
+}
+
 // Event filter params
 export interface EventFilterParams extends PaginationParams {
   startDate?: string;
   endDate?: string;
   search?: string;
+}
+
+export interface StudentProfileInput {
+  gender?: Gender;
+  nationalId?: string;
+  nokName?: string;
+  nokContact?: string;
+  disabilityType?: string;
+  supportNeeds?: string;
+}
+
+export interface CaregiverProfileInput {
+  contactNumber?: string;
+  caregiverType?: CaregiverType;
+  organization?: string;
+  jobTitle?: string;
 }

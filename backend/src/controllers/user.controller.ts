@@ -2,13 +2,45 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest, ApiResponse } from '../types/index.js';
 import * as userService from '../services/user.service.js';
-import { Role } from '@prisma/client';
+import { Role, Gender, CaregiverType } from '@prisma/client';
+import { normalizeQrToken } from '../utils/qr.utils.js';
 
 // Validation schemas
+const studentProfileSchema = z.object({
+  gender: z.nativeEnum(Gender).optional(),
+  nationalId: z.string().min(4).optional(),
+  nokName: z.string().min(1).optional(),
+  nokContact: z.string().min(5).optional(),
+  disabilityType: z.string().min(1).optional(),
+  supportNeeds: z.string().min(1).optional(),
+});
+
+const caregiverProfileSchema = z.object({
+  contactNumber: z.string().min(5).optional(),
+  caregiverType: z.nativeEnum(CaregiverType).optional(),
+  organization: z.string().min(1).optional(),
+  jobTitle: z.string().min(1).optional(),
+});
+
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
-  caregiverId: z.string().uuid().nullable().optional(),
+  studentProfile: studentProfileSchema.optional(),
+  caregiverProfile: caregiverProfileSchema.optional(),
 });
+
+type StudentProfilePayload = z.infer<typeof studentProfileSchema>;
+
+const maskSensitiveStudentProfile = (
+  profile: StudentProfilePayload | null | undefined
+) => {
+  if (!profile) return profile;
+
+  return {
+    ...profile,
+    nationalId: profile.nationalId ? `****${profile.nationalId.slice(-4)}` : null,
+    nokContact: profile.nokContact ? `****${profile.nokContact.slice(-4)}` : null,
+  };
+};
 
 /**
  * Get user by ID
@@ -32,9 +64,14 @@ export const getUserById = async (
     }
 
     // Only allow users to see their own profile or caregivers to see their students
-    const canAccess =
-      req.user?.id === id ||
-      (req.dbUser?.role === Role.CAREGIVER && user.caregiverId === req.user?.id);
+    const isSelf = req.user?.id === id;
+    const isStaff = req.dbUser?.role === Role.STAFF;
+    const isLinkedCaregiver =
+      req.dbUser?.role === Role.CAREGIVER
+        ? await userService.isCaregiverForStudent(req.user!.id, id)
+        : false;
+
+    const canAccess = isSelf || isStaff || isLinkedCaregiver;
 
     if (!canAccess) {
       res.status(403).json({
@@ -67,17 +104,18 @@ export const getUserByQrToken = async (
 ): Promise<void> => {
   try {
     const { token } = req.params;
+    const normalizedToken = normalizeQrToken(token);
 
-    // Only caregivers can look up users by QR token
-    if (req.dbUser?.role !== Role.CAREGIVER) {
+    // Only caregivers/staff can look up users by QR token
+    if (req.dbUser?.role !== Role.CAREGIVER && req.dbUser?.role !== Role.STAFF) {
       res.status(403).json({
         success: false,
-        error: 'Only caregivers can scan student QR codes',
+        error: 'Only caregivers or staff can scan student QR codes',
       });
       return;
     }
 
-    const user = await userService.getUserByQrToken(token);
+    const user = await userService.getUserByQrToken(normalizedToken);
 
     if (!user) {
       res.status(404).json({
@@ -96,9 +134,40 @@ export const getUserByQrToken = async (
       return;
     }
 
+    const isStaff = req.dbUser?.role === Role.STAFF;
+    const isLinkedCaregiver =
+      req.dbUser?.role === Role.CAREGIVER
+        ? await userService.isCaregiverForStudent(req.user!.id, user.id)
+        : false;
+
+    const sanitizedSignups =
+      user.eventSignups?.map((signup) => {
+        if (!signup.event) return signup;
+        const { checkInToken, ...event } = signup.event as Record<string, unknown>;
+        return {
+          ...signup,
+          event,
+        };
+      }) || [];
+
+    const baseUser = {
+      ...user,
+      eventSignups: sanitizedSignups,
+    };
+
+    const sanitizedUser =
+      !isLinkedCaregiver && !isStaff
+        ? {
+            ...baseUser,
+            studentProfile: maskSensitiveStudentProfile(user.studentProfile),
+            eventSignups: [],
+            caregivers: [],
+          }
+        : baseUser;
+
     res.json({
       success: true,
-      data: { user },
+      data: { user: sanitizedUser, linked: isLinkedCaregiver },
     });
   } catch (error) {
     console.error('Get user by QR token error:', error);
@@ -186,9 +255,14 @@ export const getUserEvents = async (
       return;
     }
 
-    const canAccess =
-      req.user?.id === id ||
-      (req.dbUser?.role === Role.CAREGIVER && targetUser.caregiverId === req.user?.id);
+    const isSelf = req.user?.id === id;
+    const isStaff = req.dbUser?.role === Role.STAFF;
+    const isLinkedCaregiver =
+      req.dbUser?.role === Role.CAREGIVER
+        ? await userService.isCaregiverForStudent(req.user!.id, id)
+        : false;
+
+    const canAccess = isSelf || isStaff || isLinkedCaregiver;
 
     if (!canAccess) {
       res.status(403).json({
@@ -204,10 +278,14 @@ export const getUserEvents = async (
     };
 
     const events = await userService.getUserEvents(id, options);
+    const sanitizedEvents = events.map((event) => {
+      const { checkInToken, ...rest } = event as Record<string, unknown>;
+      return rest;
+    });
 
     res.json({
       success: true,
-      data: { events },
+      data: { events: sanitizedEvents },
     });
   } catch (error) {
     console.error('Get user events error:', error);
@@ -292,7 +370,7 @@ export const assignStudent = async (
       return;
     }
 
-    const { studentId } = req.body;
+    const { studentId, relationship } = req.body;
 
     if (!studentId) {
       res.status(400).json({
@@ -302,14 +380,10 @@ export const assignStudent = async (
       return;
     }
 
-    const student = await userService.assignStudentToCaregiver(
-      studentId,
-      req.user!.id
-    );
+    await userService.assignStudentToCaregiver(studentId, req.user!.id, relationship);
 
     res.json({
       success: true,
-      data: { student },
       message: 'Student assigned successfully',
     });
   } catch (error) {

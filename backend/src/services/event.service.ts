@@ -1,5 +1,5 @@
 import { prisma } from '../utils/prisma.js';
-import { Event } from '@prisma/client';
+import { Event, SignupStatus } from '@prisma/client';
 import { generateQrToken } from '../utils/qr.utils.js';
 
 export interface CreateEventInput {
@@ -8,6 +8,9 @@ export interface CreateEventInput {
   location?: string;
   startTime: Date;
   endTime: Date;
+  capacity?: number | null;
+  requiresApproval?: boolean;
+  allowWaitlist?: boolean;
   createdById: string;
 }
 
@@ -17,6 +20,9 @@ export interface UpdateEventInput {
   location?: string;
   startTime?: Date;
   endTime?: Date;
+  capacity?: number | null;
+  requiresApproval?: boolean;
+  allowWaitlist?: boolean;
 }
 
 export interface EventFilters {
@@ -39,6 +45,7 @@ export const createEvent = async (input: CreateEventInput): Promise<Event> => {
     data: {
       ...input,
       qrToken: generateQrToken(),
+      checkInToken: generateQrToken(),
     },
   });
 };
@@ -61,9 +68,25 @@ export const getEventById = async (id: string) => {
 
   if (!event) return null;
 
+  const statusCounts = await prisma.eventSignup.groupBy({
+    by: ['status'],
+    where: { eventId: id },
+    _count: { _all: true },
+  });
+
+  const counts = Object.values(SignupStatus).reduce((acc, status) => {
+    acc[status] = 0;
+    return acc;
+  }, {} as Record<SignupStatus, number>);
+
+  for (const item of statusCounts) {
+    counts[item.status] = item._count._all;
+  }
+
   return {
     ...event,
     signupCount: event._count.signups,
+    statusCounts: counts,
   };
 };
 
@@ -85,10 +108,43 @@ export const getEventByQrToken = async (qrToken: string) => {
 
   if (!event) return null;
 
+  const statusCounts = await prisma.eventSignup.groupBy({
+    by: ['status'],
+    where: { eventId: event.id },
+    _count: { _all: true },
+  });
+
+  const counts = Object.values(SignupStatus).reduce((acc, status) => {
+    acc[status] = 0;
+    return acc;
+  }, {} as Record<SignupStatus, number>);
+
+  for (const item of statusCounts) {
+    counts[item.status] = item._count._all;
+  }
+
   return {
     ...event,
     signupCount: event._count.signups,
+    statusCounts: counts,
   };
+};
+
+/**
+ * Get event by check-in QR token
+ */
+export const getEventByCheckInToken = async (checkInToken: string) => {
+  return prisma.event.findUnique({
+    where: { checkInToken },
+    include: {
+      createdBy: {
+        select: { id: true, name: true, email: true },
+      },
+      _count: {
+        select: { signups: true },
+      },
+    },
+  });
 };
 
 /**
@@ -191,9 +247,17 @@ export const getEventSignups = async (eventId: string) => {
           name: true,
           email: true,
           role: true,
+          studentProfile: true,
         },
       },
       signedUpBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      approvedBy: {
         select: {
           id: true,
           name: true,
@@ -214,6 +278,22 @@ export const regenerateEventQrToken = async (eventId: string): Promise<string> =
   await prisma.event.update({
     where: { id: eventId },
     data: { qrToken: newToken },
+  });
+
+  return newToken;
+};
+
+/**
+ * Regenerate check-in QR token for an event
+ */
+export const regenerateEventCheckInToken = async (
+  eventId: string
+): Promise<string> => {
+  const newToken = generateQrToken();
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { checkInToken: newToken },
   });
 
   return newToken;

@@ -2,12 +2,15 @@ import { supabase, supabaseAdmin } from '../config/supabase.js';
 import { prisma } from '../utils/prisma.js';
 import { generateQrToken } from '../utils/qr.utils.js';
 import { Role, User } from '@prisma/client';
+import type { CaregiverProfileInput, StudentProfileInput } from '../types/index.js';
 
 export interface RegisterInput {
   email: string;
   password: string;
   name: string;
   role?: Role;
+  studentProfile?: StudentProfileInput;
+  caregiverProfile?: CaregiverProfileInput;
 }
 
 export interface LoginInput {
@@ -28,7 +31,7 @@ export interface AuthResult {
  * Register a new user with Supabase Auth and create profile in database
  */
 export const registerUser = async (input: RegisterInput): Promise<AuthResult> => {
-  const { email, password, name, role = Role.STUDENT } = input;
+  const { email, password, name, role = Role.STUDENT, studentProfile, caregiverProfile } = input;
 
   // Sign up with Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -46,14 +49,36 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResult> =>
 
   // Create user profile in database
   try {
-    const user = await prisma.user.create({
-      data: {
-        id: authData.user.id,
-        email,
-        name,
-        role,
-        qrToken: generateQrToken(),
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          id: authData.user.id,
+          email,
+          name,
+          role,
+          qrToken: generateQrToken(),
+        },
+      });
+
+      if (role === Role.STUDENT && studentProfile) {
+        await tx.studentProfile.create({
+          data: {
+            ...studentProfile,
+            userId: createdUser.id,
+          },
+        });
+      }
+
+      if (role !== Role.STUDENT && caregiverProfile) {
+        await tx.caregiverProfile.create({
+          data: {
+            ...caregiverProfile,
+            userId: createdUser.id,
+          },
+        });
+      }
+
+      return createdUser;
     });
 
     return {
@@ -151,19 +176,20 @@ export const getCurrentUser = async (userId: string): Promise<User | null> => {
   return prisma.user.findUnique({
     where: { id: userId },
     include: {
-      caregiver: {
+      studentProfile: true,
+      caregiverProfile: true,
+      caregiverLinks: {
         select: {
-          id: true,
-          name: true,
-          email: true,
+          student: {
+            select: { id: true, name: true, email: true, qrToken: true },
+          },
         },
       },
-      students: {
+      studentLinks: {
         select: {
-          id: true,
-          name: true,
-          email: true,
-          qrToken: true,
+          caregiver: {
+            select: { id: true, name: true, email: true },
+          },
         },
       },
     },

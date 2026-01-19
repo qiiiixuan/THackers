@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { AuthenticatedRequest, ApiResponse } from '../types/index.js';
 import * as eventService from '../services/event.service.js';
 import { Role } from '@prisma/client';
+import { normalizeQrToken } from '../utils/qr.utils.js';
 
 // Validation schemas
 const createEventSchema = z.object({
@@ -11,6 +12,9 @@ const createEventSchema = z.object({
   location: z.string().optional(),
   startTime: z.string().transform((str) => new Date(str)),
   endTime: z.string().transform((str) => new Date(str)),
+  capacity: z.number().int().positive().nullable().optional(),
+  requiresApproval: z.boolean().optional(),
+  allowWaitlist: z.boolean().optional(),
 }).refine((data) => data.endTime > data.startTime, {
   message: 'End time must be after start time',
 });
@@ -21,7 +25,18 @@ const updateEventSchema = z.object({
   location: z.string().optional(),
   startTime: z.string().transform((str) => new Date(str)).optional(),
   endTime: z.string().transform((str) => new Date(str)).optional(),
+  capacity: z.number().int().positive().nullable().optional(),
+  requiresApproval: z.boolean().optional(),
+  allowWaitlist: z.boolean().optional(),
 });
+
+const isEventManagerRole = (role?: Role) => role === Role.CAREGIVER || role === Role.STAFF;
+
+const sanitizeEvent = (event: Record<string, unknown>, canViewCheckIn: boolean) => {
+  if (canViewCheckIn) return event;
+  const { checkInToken, ...rest } = event;
+  return rest;
+};
 
 /**
  * Get all events
@@ -47,9 +62,16 @@ export const getEvents = async (
 
     const result = await eventService.getEvents(filters, pagination);
 
+    const sanitizedEvents = result.events.map((event) =>
+      sanitizeEvent(event as Record<string, unknown>, false)
+    );
+
     res.json({
       success: true,
-      data: result,
+      data: {
+        ...result,
+        events: sanitizedEvents,
+      },
     });
   } catch (error) {
     console.error('Get events error:', error);
@@ -81,9 +103,13 @@ export const getEventById = async (
       return;
     }
 
+    const canViewCheckIn =
+      isEventManagerRole(req.dbUser?.role) &&
+      (await eventService.isEventCreator(id, req.user!.id));
+
     res.json({
       success: true,
-      data: { event },
+      data: { event: sanitizeEvent(event as Record<string, unknown>, canViewCheckIn) },
     });
   } catch (error) {
     console.error('Get event error:', error);
@@ -104,8 +130,9 @@ export const getEventByQrToken = async (
 ): Promise<void> => {
   try {
     const { token } = req.params;
+    const normalizedToken = normalizeQrToken(token);
 
-    const event = await eventService.getEventByQrToken(token);
+    const event = await eventService.getEventByQrToken(normalizedToken);
 
     if (!event) {
       res.status(404).json({
@@ -117,7 +144,7 @@ export const getEventByQrToken = async (
 
     res.json({
       success: true,
-      data: { event },
+      data: { event: sanitizeEvent(event as Record<string, unknown>, false) },
     });
   } catch (error) {
     console.error('Get event by QR token error:', error);
@@ -137,11 +164,11 @@ export const createEvent = async (
   res: Response<ApiResponse>
 ): Promise<void> => {
   try {
-    // Only caregivers can create events
-    if (req.dbUser?.role !== Role.CAREGIVER) {
+    // Only staff/caregivers can create events
+    if (!isEventManagerRole(req.dbUser?.role)) {
       res.status(403).json({
         success: false,
-        error: 'Only caregivers can create events',
+        error: 'Only staff or caregivers can create events',
       });
       return;
     }
@@ -279,11 +306,20 @@ export const getEventSignups = async (
   try {
     const { id } = req.params;
 
-    // Only caregivers can see event signups
-    if (req.dbUser?.role !== Role.CAREGIVER) {
+    // Only staff/caregiver event creators can see event signups
+    if (!isEventManagerRole(req.dbUser?.role)) {
       res.status(403).json({
         success: false,
-        error: 'Only caregivers can view event signups',
+        error: 'Only staff can view event signups',
+      });
+      return;
+    }
+
+    const isCreator = await eventService.isEventCreator(id, req.user!.id);
+    if (!isCreator && req.dbUser?.role !== Role.STAFF) {
+      res.status(403).json({
+        success: false,
+        error: 'Only the event creator or staff can view signups',
       });
       return;
     }
@@ -337,6 +373,43 @@ export const regenerateEventQr = async (
     res.status(500).json({
       success: false,
       error: 'Failed to regenerate QR token',
+    });
+  }
+};
+
+/**
+ * Regenerate check-in QR token for an event
+ * POST /api/events/:id/regenerate-checkin-qr
+ */
+export const regenerateEventCheckInQr = async (
+  req: AuthenticatedRequest,
+  res: Response<ApiResponse>
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const isCreator = await eventService.isEventCreator(id, req.user!.id);
+
+    if (!isCreator) {
+      res.status(403).json({
+        success: false,
+        error: 'Only the event creator can regenerate the check-in QR token',
+      });
+      return;
+    }
+
+    const newToken = await eventService.regenerateEventCheckInToken(id);
+
+    res.json({
+      success: true,
+      data: { checkInToken: newToken },
+      message: 'Check-in QR token regenerated successfully',
+    });
+  } catch (error) {
+    console.error('Regenerate event check-in QR error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to regenerate check-in QR token',
     });
   }
 };

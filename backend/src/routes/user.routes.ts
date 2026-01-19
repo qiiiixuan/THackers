@@ -32,9 +32,9 @@ router.post('/assign-student', authorize(Role.CAREGIVER), userController.assignS
 /**
  * @route GET /api/users/qr/:token
  * @desc Get user by QR token (for caregiver scanning student QR)
- * @access Private (Caregiver only)
+ * @access Private (Staff/Caregiver only)
  */
-router.get('/qr/:token', authorize(Role.CAREGIVER), userController.getUserByQrToken);
+router.get('/qr/:token', authorize(Role.CAREGIVER, Role.STAFF), userController.getUserByQrToken);
 
 /**
  * @route GET /api/users/:id

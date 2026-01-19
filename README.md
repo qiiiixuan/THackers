@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MIINDS Connect
 
-## Getting Started
+QR-first event sign-ups for individuals with special needs, caregivers, and staff.
 
-First, run the development server:
+MIINDS Singapore empowers individuals with special needs and their families. MIINDS Connect reduces friction in activity sign-ups, cuts staff consolidation time, and keeps sensitive data protected.
 
+## Problem Statement
+How might we reduce friction in activity sign-ups for both individuals and caregivers, while reducing manual effort for staff in managing and consolidating registration data?
+
+## Solution Overview
+Two interfaces powered by QR codes:
+- Individuals: scan an event QR, confirm in one step, view a calendar + their sign-ups.
+- Caregivers: scan a student QR, sign in to confirm, approve or waitlist on behalf of the student.
+- Staff: create events, set capacity + approvals, manage waitlists, and track attendance.
+
+## Key Features
+- QR-first sign-up flow (event QR + student QR).
+- Role-based access control (student, caregiver, staff).
+- Capacity limits, approval queues, and waitlists.
+- Attendance tracking with a dedicated check-in QR.
+- Caregiver-student consent links with audit-friendly records.
+- Data masking for sensitive fields in caregiver views.
+
+## Tech Stack
+- Frontend: Next.js (React, Tailwind)
+- Backend: Express + Prisma
+- Auth/DB: Supabase (PostgreSQL)
+
+## Data Model (Core)
+- `users`: student, caregiver, staff accounts + QR token
+- `student_profiles`: gender, ID, NOK details, disability type, support needs
+- `caregiver_profiles`: role type, organization, contact
+- `caregiver_students`: caregiver-student links + consent timestamp
+- `events`: capacity, approval rules, waitlist, QR + check-in QR
+- `event_signups`: status lifecycle (pending/approved/waitlisted/checked-in)
+
+## Quick Start
+
+Frontend:
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Backend:
+```bash
+cd backend
+npm install
+npm run prisma:generate
+npm run prisma:push
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
+Frontend (`.env.local`):
+```
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Backend (`backend/.env`):
+```
+DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+SUPABASE_URL="https://[PROJECT-REF].supabase.co"
+SUPABASE_ANON_KEY="your-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+QR_SIGNING_SECRET="long-random-string"
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL="http://localhost:3000"
+```
 
-## Learn More
+## Demo Script (3 minutes)
+1. Student logs in and scans event QR to auto-fill and confirm.
+2. Caregiver signs in, scans student QR, approves a different event.
+3. Staff views roster: capacity, waitlist, approvals, and checks-in attendees.
 
-To learn more about Next.js, take a look at the following resources:
+## Security & Privacy
+- Signed QR tokens with expiry (optional on generation).
+- RLS-ready data model + backend-only service role for trusted operations.
+- Consent-based caregiver access to student records.
+- Masked ID + NOK contact for unlinked caregivers.
+- Reference RLS policies in `backend/supabase/rls.sql`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Overview
+See `backend/README.md` for endpoint details and request bodies.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Future Enhancements
+- WhatsApp/SMS reminders for waitlist promotions.
+- Offline capture with sync for on-site sign-ups.
+- Multi-language mode and text-to-speech guidance.

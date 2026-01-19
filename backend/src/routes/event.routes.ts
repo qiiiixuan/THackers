@@ -18,9 +18,9 @@ router.get('/', eventController.getEvents);
 /**
  * @route POST /api/events
  * @desc Create a new event
- * @access Private (Caregiver only)
+ * @access Private (Staff/Caregiver only)
  */
-router.post('/', authorize(Role.CAREGIVER), eventController.createEvent);
+router.post('/', authorize(Role.CAREGIVER, Role.STAFF), eventController.createEvent);
 
 /**
  * @route GET /api/events/qr/:token
@@ -41,27 +41,38 @@ router.get('/:id', eventController.getEventById);
  * @desc Update an event
  * @access Private (Event creator only)
  */
-router.patch('/:id', authorize(Role.CAREGIVER), eventController.updateEvent);
+router.patch('/:id', authorize(Role.CAREGIVER, Role.STAFF), eventController.updateEvent);
 
 /**
  * @route DELETE /api/events/:id
  * @desc Delete an event
  * @access Private (Event creator only)
  */
-router.delete('/:id', authorize(Role.CAREGIVER), eventController.deleteEvent);
+router.delete('/:id', authorize(Role.CAREGIVER, Role.STAFF), eventController.deleteEvent);
 
 /**
  * @route GET /api/events/:id/signups
  * @desc Get signups for an event
- * @access Private (Caregiver only)
+ * @access Private (Staff/Caregiver only)
  */
-router.get('/:id/signups', authorize(Role.CAREGIVER), eventController.getEventSignups);
+router.get('/:id/signups', authorize(Role.CAREGIVER, Role.STAFF), eventController.getEventSignups);
 
 /**
  * @route POST /api/events/:id/regenerate-qr
  * @desc Regenerate QR token for an event
  * @access Private (Event creator only)
  */
-router.post('/:id/regenerate-qr', authorize(Role.CAREGIVER), eventController.regenerateEventQr);
+router.post('/:id/regenerate-qr', authorize(Role.CAREGIVER, Role.STAFF), eventController.regenerateEventQr);
+
+/**
+ * @route POST /api/events/:id/regenerate-checkin-qr
+ * @desc Regenerate check-in QR token for an event
+ * @access Private (Event creator only)
+ */
+router.post(
+  '/:id/regenerate-checkin-qr',
+  authorize(Role.CAREGIVER, Role.STAFF),
+  eventController.regenerateEventCheckInQr
+);
 
 export default router;

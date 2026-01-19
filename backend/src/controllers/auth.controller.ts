@@ -2,14 +2,32 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest, ApiResponse } from '../types/index.js';
 import * as authService from '../services/auth.service.js';
-import { Role } from '@prisma/client';
+import { Role, Gender, CaregiverType } from '@prisma/client';
 
 // Validation schemas
+const studentProfileSchema = z.object({
+  gender: z.nativeEnum(Gender).optional(),
+  nationalId: z.string().min(4).optional(),
+  nokName: z.string().min(1).optional(),
+  nokContact: z.string().min(5).optional(),
+  disabilityType: z.string().min(1).optional(),
+  supportNeeds: z.string().min(1).optional(),
+});
+
+const caregiverProfileSchema = z.object({
+  contactNumber: z.string().min(5).optional(),
+  caregiverType: z.nativeEnum(CaregiverType).optional(),
+  organization: z.string().min(1).optional(),
+  jobTitle: z.string().min(1).optional(),
+});
+
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   name: z.string().min(1, 'Name is required'),
   role: z.nativeEnum(Role).optional(),
+  studentProfile: studentProfileSchema.optional(),
+  caregiverProfile: caregiverProfileSchema.optional(),
 });
 
 const loginSchema = z.object({
