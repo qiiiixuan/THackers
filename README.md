@@ -1,4 +1,4 @@
-# MIINDS Connect
+# MINDS Connect
 
 QR-first event sign-ups for individuals with special needs, caregivers, and staff.
 
@@ -42,7 +42,7 @@ npm install
 npm run dev
 ```
 
-Backend:
+Backend (in a separate terminal):
 ```bash
 cd backend
 npm install

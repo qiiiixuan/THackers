@@ -15,7 +15,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted">
-              MIINDS Connect
+              MINDS Connect
             </p>
             <p className="font-display text-lg text-[color:var(--accent-3)]">
               App Console

@@ -60,6 +60,7 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResult> =>
         },
       });
 
+      // Not added in schema.prisma yet
       if (role === Role.STUDENT && studentProfile) {
         await tx.studentProfile.create({
           data: {
@@ -89,6 +90,7 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResult> =>
             refresh_token: authData.session.refresh_token,
           }
         : null,
+      error: !authData.session ? "Please check your email for confirmation." : undefined,
     };
   } catch (dbError) {
     // If database creation fails, try to delete the Supabase auth user

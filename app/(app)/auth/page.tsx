@@ -23,7 +23,7 @@ const roles = [
 ];
 
 const genders = [
-  { value: "", label: "Select gender (optional)" },
+  { value: "", label: "Select gender" },
   { value: "FEMALE", label: "Female" },
   { value: "MALE", label: "Male" },
   { value: "OTHER", label: "Other" },
@@ -31,7 +31,7 @@ const genders = [
 ];
 
 const caregiverTypes = [
-  { value: "", label: "Select caregiver type (optional)" },
+  { value: "", label: "Select caregiver type" },
   { value: "MEDICAL", label: "Medical" },
   { value: "TEACHER", label: "Teacher" },
   { value: "STAFF", label: "Staff" },
@@ -186,7 +186,7 @@ export default function AuthPage() {
           Sign in or register
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Use your MIINDS Connect account to access student, caregiver, or staff
+          Use your MINDS Connect account to access student, caregiver, or staff
           tools.
         </p>
 
@@ -313,7 +313,7 @@ export default function AuthPage() {
 
             <div className="rounded-2xl border border-dashed border-black/10 bg-white/60 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                {roleLabel} details (optional)
+                {roleLabel} details
               </p>
               {registerForm.role === "STUDENT" ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
