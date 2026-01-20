@@ -4,13 +4,13 @@
   "description": "Express.js backend for QR Event Platform with Supabase and Prisma",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
-    "start": "bun dist/index.js",
-    "prisma:generate": "bunx prisma generate",
-    "prisma:push": "bunx prisma db push",
-    "prisma:migrate": "bunx prisma migrate dev",
-    "prisma:studio": "bunx prisma studio"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma:generate": "npx prisma generate",
+    "prisma:push": "npx prisma db push",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:studio": "npx prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

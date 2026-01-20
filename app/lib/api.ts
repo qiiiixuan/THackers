@@ -19,7 +19,7 @@ export type SessionInfo = {
 const storageKey = "miinds-session";
 
 export const getApiUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_URL || "";
 
 export const getSession = (): SessionInfo | null => {
   if (typeof window === "undefined") return null;

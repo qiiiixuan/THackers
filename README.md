@@ -23,7 +23,7 @@ Two interfaces powered by QR codes:
 
 ## Tech Stack
 - Frontend: Next.js (React, Tailwind)
-- Backend: Express + Prisma
+- Backend: Next.js API routes + Prisma
 - Auth/DB: Supabase (PostgreSQL)
 
 ## Data Model (Core)
@@ -36,37 +36,24 @@ Two interfaces powered by QR codes:
 
 ## Quick Start
 
-Frontend:
 ```bash
-npm install
-npm run dev
-```
-
-Backend (in a separate terminal):
-```bash
-cd backend
 npm install
 npm run prisma:generate
 npm run prisma:push
 npm run dev
 ```
 
-## Environment Variables
-Frontend (`.env.local`):
-```
-NEXT_PUBLIC_API_URL="http://localhost:3001"
-```
+Note: the legacy Express server lives in `backend/`, but the Vercel deployment uses the Next.js API routes in this repo.
 
-Backend (`backend/.env`):
+## Environment Variables
+`.env.local` (root):
 ```
 DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
 SUPABASE_URL="https://[PROJECT-REF].supabase.co"
 SUPABASE_ANON_KEY="your-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 QR_SIGNING_SECRET="long-random-string"
-PORT=3001
-NODE_ENV=development
-FRONTEND_URL="http://localhost:3000"
 ```
 
 ## Demo Script (3 minutes)
@@ -82,7 +69,7 @@ FRONTEND_URL="http://localhost:3000"
 - Reference RLS policies in `backend/supabase/rls.sql`.
 
 ## API Overview
-See `backend/README.md` for endpoint details and request bodies.
+API routes live under `app/api`.
 
 ## Future Enhancements
 - WhatsApp/SMS reminders for waitlist promotions.
