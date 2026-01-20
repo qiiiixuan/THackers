@@ -1,4 +1,4 @@
-# MIINDS Connect Backend
+# MINDS Connect Backend
 
 Express.js API with Prisma ORM and Supabase Auth for QR-first event sign-ups.
 

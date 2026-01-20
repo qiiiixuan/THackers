@@ -25,9 +25,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MIINDS Connect",
+  title: "MINDS Connect",
   description:
-    "QR-first event sign-ups for individuals, caregivers, and staff at MIINDS Singapore.",
+    "QR-first event sign-ups for individuals, caregivers, and staff at MINDS Singapore.",
 };
 
 export default function RootLayout({

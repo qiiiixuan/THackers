@@ -1,4 +1,4 @@
--- Suggested RLS policies for MIINDS Connect
+-- Suggested RLS policies for MINDS Connect
 -- Enable RLS on core tables
 
 alter table public.users enable row level security;

@@ -2,7 +2,7 @@
 
 QR-first event sign-ups for individuals with special needs, caregivers, and staff.
 
-MIINDS Singapore empowers individuals with special needs and their families. MIINDS Connect reduces friction in activity sign-ups, cuts staff consolidation time, and keeps sensitive data protected.
+MINDS Singapore empowers individuals with special needs and their families. MINDS Connect reduces friction in activity sign-ups, cuts staff consolidation time, and keeps sensitive data protected.
 
 ## Problem Statement
 How might we reduce friction in activity sign-ups for both individuals and caregivers, while reducing manual effort for staff in managing and consolidating registration data?
