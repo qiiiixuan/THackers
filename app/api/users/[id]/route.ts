@@ -45,7 +45,7 @@ const maskSensitiveStudentProfile = (
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
@@ -54,17 +54,18 @@ export async function GET(
       return jsonError(error.status, error.message);
     }
 
-    const user = await userService.getUserById(params.id, true);
+    const { id } = await params;
+    const user = await userService.getUserById(id, true);
 
     if (!user) {
       return jsonError(404, "User not found");
     }
 
-    const isSelf = context?.user?.id === params.id;
+    const isSelf = context?.user?.id === id;
     const isStaff = context?.dbUser?.role === Role.STAFF;
     const isLinkedCaregiver =
       context?.dbUser?.role === Role.CAREGIVER
-        ? await userService.isCaregiverForStudent(context.user.id, params.id)
+        ? await userService.isCaregiverForStudent(context.user.id, id)
         : false;
 
     const canAccess = isSelf || isStaff || isLinkedCaregiver;
@@ -110,7 +111,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
@@ -119,7 +120,8 @@ export async function PATCH(
       return jsonError(error.status, error.message);
     }
 
-    if (context?.user?.id !== params.id) {
+    const { id } = await params;
+    if (context?.user?.id !== id) {
       return jsonError(403, "You can only update your own profile");
     }
 
@@ -130,7 +132,7 @@ export async function PATCH(
       return jsonError(400, validation.error.errors[0].message);
     }
 
-    const user = await userService.updateUser(params.id, validation.data);
+    const user = await userService.updateUser(id, validation.data);
 
     if (!user) {
       return jsonError(404, "User not found");

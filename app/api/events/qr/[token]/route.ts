@@ -10,7 +10,7 @@ const sanitizeEvent = (event: Record<string, unknown>) => {
 
 export async function GET(
   req: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { error } = await getAuthContext(req);
@@ -18,7 +18,8 @@ export async function GET(
       return jsonError(error.status, error.message);
     }
 
-    const normalizedToken = normalizeQrToken(params.token);
+    const { token } = await params;
+    const normalizedToken = normalizeQrToken(token);
     const event = await eventService.getEventByQrToken(normalizedToken);
 
     if (!event) {

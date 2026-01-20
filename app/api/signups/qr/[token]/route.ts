@@ -21,7 +21,7 @@ const sanitizeEvent = (event: Record<string, unknown>) => {
 
 export async function POST(
   req: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
@@ -30,7 +30,8 @@ export async function POST(
       return jsonError(error.status, error.message);
     }
 
-    const normalizedToken = normalizeQrToken(params.token);
+    const { token } = await params;
+    const normalizedToken = normalizeQrToken(token);
     const event = await eventService.getEventByQrToken(normalizedToken);
 
     if (!event) {

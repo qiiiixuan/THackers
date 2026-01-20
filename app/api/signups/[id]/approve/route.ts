@@ -9,9 +9,10 @@ const isEventManagerRole = (role?: Role) =>
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { context, error } = await getAuthContext(req);
 
     if (error) {
@@ -22,7 +23,7 @@ export async function POST(
       return jsonError(403, "Only staff or caregivers can approve signups");
     }
 
-    const signup = await signupService.getSignupById(params.id);
+    const signup = await signupService.getSignupById(id);
 
     if (!signup) {
       return jsonError(404, "Signup not found");
@@ -37,10 +38,7 @@ export async function POST(
       return jsonError(403, "Only the event creator can approve signups");
     }
 
-    const updated = await signupService.approveSignup(
-      params.id,
-      context!.user.id
-    );
+    const updated = await signupService.approveSignup(id, context!.user.id);
 
     return Response.json({
       success: true,

@@ -26,10 +26,10 @@ const sanitizeEvent = (event: Record<string, unknown>, canViewCheckIn: boolean) 
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const event = await eventService.getEventById(id);
 
     if (!event) {
@@ -55,11 +55,11 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     if (error) {
       return jsonError(error.status, error.message);
@@ -97,11 +97,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
-    const { id } = params;
+    const { id } = await params;
 
     if (error) {
       return jsonError(error.status, error.message);

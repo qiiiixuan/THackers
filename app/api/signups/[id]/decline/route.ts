@@ -14,9 +14,10 @@ const isEventManagerRole = (role?: Role) =>
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { context, error } = await getAuthContext(req);
 
     if (error) {
@@ -40,7 +41,7 @@ export async function POST(
       return jsonError(400, validation.error.errors[0].message);
     }
 
-    const signup = await signupService.getSignupById(params.id);
+    const signup = await signupService.getSignupById(id);
 
     if (!signup) {
       return jsonError(404, "Signup not found");
@@ -55,10 +56,7 @@ export async function POST(
       return jsonError(403, "Only the event creator can decline signups");
     }
 
-    const updated = await signupService.declineSignup(
-      params.id,
-      validation.data.note
-    );
+    const updated = await signupService.declineSignup(id, validation.data.note);
 
     return Response.json({
       success: true,

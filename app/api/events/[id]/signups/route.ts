@@ -8,9 +8,10 @@ const isEventManagerRole = (role?: Role) =>
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { context, error } = await getAuthContext(req);
 
     if (error) {
@@ -21,13 +22,13 @@ export async function GET(
       return jsonError(403, "Only staff or caregivers can view event signups");
     }
 
-    const isCreator = await eventService.isEventCreator(params.id, context!.user.id);
+    const isCreator = await eventService.isEventCreator(id, context!.user.id);
 
     if (!isCreator && context?.dbUser?.role !== Role.STAFF) {
       return jsonError(403, "Only the event creator or staff can view signups");
     }
 
-    const signups = await eventService.getEventSignups(params.id);
+    const signups = await eventService.getEventSignups(id);
 
     return Response.json({
       success: true,

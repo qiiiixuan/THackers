@@ -18,7 +18,7 @@ const maskSensitiveStudentProfile = (
 
 export async function GET(
   req: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
@@ -31,7 +31,8 @@ export async function GET(
       return jsonError(403, "Only caregivers or staff can scan student QR codes");
     }
 
-    const normalizedToken = normalizeQrToken(params.token);
+    const { token } = await params;
+    const normalizedToken = normalizeQrToken(token);
     const user = await userService.getUserByQrToken(normalizedToken);
 
     if (!user) {

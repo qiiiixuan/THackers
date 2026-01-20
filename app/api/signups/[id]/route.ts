@@ -16,7 +16,7 @@ const sanitizeSignupEvent = <T extends { event?: unknown }>(signup: T) => {
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
@@ -25,7 +25,8 @@ export async function GET(
       return jsonError(error.status, error.message);
     }
 
-    const signup = await signupService.getSignupById(params.id);
+    const { id } = await params;
+    const signup = await signupService.getSignupById(id);
 
     if (!signup) {
       return jsonError(404, "Signup not found");
@@ -57,7 +58,7 @@ export async function GET(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, error } = await getAuthContext(req);
@@ -66,7 +67,8 @@ export async function DELETE(
       return jsonError(error.status, error.message);
     }
 
-    await signupService.cancelSignup(params.id, context!.user.id);
+    const { id } = await params;
+    await signupService.cancelSignup(id, context!.user.id);
 
     return Response.json({
       success: true,
